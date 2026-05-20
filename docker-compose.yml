@@ -1,0 +1,20 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local-compose
+      MODEL_PATH: /app/artifacts/model.pkl
+      MODEL_VERSION: v1
+      LOG_LEVEL: INFO
+    volumes:
+      - ./artifacts:/app/artifacts:ro
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.19.0
+    command: mlflow ui --host 0.0.0.0 --port 5000 --backend-store-uri file:/mlruns
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns

@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Lint
+        run: ruff check .
+      - name: Unit tests
+        run: pytest -q
+      - name: Train smoke model
+        run: python training/train.py
+      - name: Docker build
+        run: docker build -t pharma-mlops-clinical-risk-api:ci .
+      - name: Container smoke test
+        run: |
+          docker run -d --rm -p 8000:8000 --name clinical-risk-api pharma-mlops-clinical-risk-api:ci
+          for i in {1..20}; do
+            curl -fsS http://localhost:8000/health && break
+            sleep 2
+          done
+          bash scripts/smoke_test.sh
+          docker stop clinical-risk-api
